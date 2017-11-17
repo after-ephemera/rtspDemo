@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">RTSPDemo</string>
+    <string name="title_activity_client">ClientActivity</string>
+    <string name="bitrate">bitrate:</string>
 </resources>

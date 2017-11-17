@@ -61,7 +61,7 @@ public class UriParser {
 	 */
 	public static Session parse(String uri) throws IllegalStateException, IOException {
 		SessionBuilder builder = SessionBuilder.getInstance().clone();
-		uri = "rtsp://192.168.43.1:1234?multicast=232.0.1.2";
+//		uri = "rtsp://192.168.43.1:1234?multicast=232.0.1.2";
 		byte audioApi = 0, videoApi = 0;
 
         String query = URI.create(uri).getQuery();

@@ -54,7 +54,8 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback, Session.Callba
 //                .setDestination("192.168.43.19")// mbp
 //                .setDestination("192.168.43.20")// iMac
 //                .setDestination("192.168.43.154")// mbp?
-                .setDestination("232.0.1.2") // multicast
+                .setDestination("192.168.43.110")// Galaxy s7
+//                .setDestination("232.0.1.2") // multicast
                 .setCallback(this)
         sessionBuilder.videoEncoder = SessionBuilder.VIDEO_H264
         session = sessionBuilder.build()
