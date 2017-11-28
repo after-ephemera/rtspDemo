@@ -17,6 +17,7 @@ import android.R.id.edit
 import android.preference.PreferenceManager
 import android.content.SharedPreferences
 import android.util.Log
+import net.majorkernelpanic.streaming.video.VideoQuality
 
 
 class ClientActivity : AppCompatActivity(), View.OnClickListener, Session.Callback, RtspClient.Callback, SurfaceHolder.Callback {
@@ -30,11 +31,13 @@ class ClientActivity : AppCompatActivity(), View.OnClickListener, Session.Callba
         ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 200)
 
         session = SessionBuilder.getInstance()
-                .setSurfaceView(surfaceView)
-                .setPreviewOrientation(0)
                 .setContext(applicationContext)
                 .setAudioEncoder(SessionBuilder.AUDIO_NONE)
+                .setVideoQuality(VideoQuality(320,240,20,5000000))
                 .setVideoEncoder(SessionBuilder.VIDEO_H264)
+                .setSurfaceView(surfaceView)
+                .setCamera(1)
+                .setPreviewOrientation(90)
                 .setCallback(this)
                 .build()
 
@@ -44,7 +47,7 @@ class ClientActivity : AppCompatActivity(), View.OnClickListener, Session.Callba
         client.setCallback(this)
 //        client.setTransportMode(RtspClient.TRANSPORT_UDP)
 
-        surfaceView.setAspectRatioMode(SurfaceView.ASPECT_RATIO_PREVIEW)
+//        surfaceView.setAspectRatioMode(SurfaceView.ASPECT_RATIO_PREVIEW)
         surfaceView.holder.addCallback(this)
 //        selectQuality()
 

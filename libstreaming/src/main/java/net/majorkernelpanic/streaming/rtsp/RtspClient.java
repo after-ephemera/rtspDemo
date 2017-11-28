@@ -28,7 +28,9 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Semaphore;
 import java.util.regex.Matcher;
@@ -112,6 +114,7 @@ public class RtspClient {
 
 	private int mCSeq;
 	private Socket mSocket;
+//	private List<Socket> sockets;
 	private String mSessionID;
 	private String mAuthorization;
 	private BufferedReader mBufferedReader;
@@ -138,6 +141,8 @@ public class RtspClient {
 		mCallback = null;
 		mMainHandler = new Handler(Looper.getMainLooper());
 		mState = STATE_STOPPED;
+
+//		sockets = new ArrayList<>();
 
 		final Semaphore signal = new Semaphore(0);
 		new HandlerThread("net.majorkernelpanic.streaming.RtspClient"){
@@ -295,6 +300,9 @@ public class RtspClient {
 		} catch (Exception ignore) {}
 		try {
 			mSocket.close();
+//			for(Socket s: sockets){
+//				s.close();
+//			}
 		} catch (Exception ignore) {}
 		mHandler.removeCallbacks(mConnectionMonitor);
 		mHandler.removeCallbacks(mRetryConnection);
@@ -304,11 +312,14 @@ public class RtspClient {
 	private void tryConnection() throws IOException {
 		mCSeq = 0;
 		mSocket = new Socket(mParameters.host, mParameters.port);
+//		sockets.add(new Socket(mParameters.host, mParameters.port));
 		mBufferedReader = new BufferedReader(new InputStreamReader(mSocket.getInputStream()));
 		mOutputStream = new BufferedOutputStream(mSocket.getOutputStream());
-		sendRequestAnnounce();
+//		sendRequestAnnounce();
+		sendRequestDescribe();
 		sendRequestSetup();
-		sendRequestRecord();
+//		sendRequestPlay();
+//		sendRequestRecord();
 	}
 	
 	/**
@@ -396,7 +407,7 @@ public class RtspClient {
 			if (stream != null) {
 				String params = mParameters.transport==TRANSPORT_TCP ? 
 						("TCP;interleaved="+2*i+"-"+(2*i+1)) : ("UDP;unicast;client_port="+(5000+2*i)+"-"+(5000+2*i+1)+";mode=receive");
-				String request = "SETUP rtsp://"+mParameters.host+":"+mParameters.port+mParameters.path+"/trackID="+i+" RTSP/1.0\r\n" +
+				String request = "SETUP rtsp://"+mParameters.host+":"+mParameters.port+mParameters.path+"trackID="+i+" RTSP/1.0\r\n" +
 						"Transport: RTP/AVP/"+params+"\r\n" +
 						addHeaders();
 
@@ -435,6 +446,82 @@ public class RtspClient {
 	}
 
 	/**
+	 * Forges and sends the DESCRIBE request
+	 */
+	private void sendRequestDescribe() throws IllegalStateException, SocketException, IOException {
+//		for (int i=0;i<2;i++) {
+//			Stream stream = mParameters.session.getTrack(i);
+//			if (stream != null) {
+//				String params = mParameters.transport==TRANSPORT_TCP ?
+//						("TCP;interleaved="+2*i+"-"+(2*i+1)) : ("UDP;unicast;client_port="+(5000+2*i)+"-"+(5000+2*i+1)+";mode=receive");
+				String request = "DESCRIBE rtsp://"+mParameters.host+":"+mParameters.port+mParameters.path+" RTSP/1.0\r\n" +
+//						"Accept: application/sdp"+"\r\n" +
+						addHeaders();
+
+				Log.i(TAG,request.substring(0, request.indexOf("\r\n")));
+
+				mOutputStream.write(request.getBytes("UTF-8"));
+				mOutputStream.flush();
+				Response response = Response.parseResponse(mBufferedReader);
+				Matcher m;
+
+				if (response.headers.containsKey("session")) {
+					try {
+						m = Response.rexegSession.matcher(response.headers.get("session"));
+						m.find();
+						mSessionID = m.group(1);
+					} catch (Exception e) {
+						throw new IOException("Invalid response from server. Session id: "+mSessionID);
+					}
+				}
+
+//				if (mParameters.transport == TRANSPORT_UDP) {
+//					try {
+//						m = Response.rexegTransport.matcher(response.headers.get("transport")); m.find();
+//						stream.setDestinationPorts(Integer.parseInt(m.group(3)), Integer.parseInt(m.group(4)));
+//						Log.d(TAG, "Setting destination ports: "+Integer.parseInt(m.group(3))+", "+Integer.parseInt(m.group(4)));
+//					} catch (Exception e) {
+//						e.printStackTrace();
+//						int[] ports = stream.getDestinationPorts();
+//						Log.d(TAG,"Server did not specify ports, using default ports: "+ports[0]+"-"+ports[1]);
+//					}
+//				} else {
+//					stream.setOutputStream(mOutputStream, (byte)(2*i));
+//				}
+//			}
+//		}
+	}
+
+	/**
+	 * Forges and sends the PLAY request
+	 */
+//	private void sendRequestPlay() throws IllegalStateException, SocketException, IOException {
+//				String params = mParameters.transport==TRANSPORT_TCP ?
+//						("TCP;interleaved="+2*i+"-"+(2*i+1)) : ("UDP;unicast;client_port="+(5000+2*i)+"-"+(5000+2*i+1)+";mode=receive");
+//				String request = "PLAY rtsp://"+mParameters.host+":"+mParameters.port+mParameters.path+" RTSP/1.0\r\n" +
+//						"Transport: RTP/AVP/"+params+"\r\n" +
+//						addHeaders();
+//
+//				Log.i(TAG,request.substring(0, request.indexOf("\r\n")));
+//
+//				mOutputStream.write(request.getBytes("UTF-8"));
+//				mOutputStream.flush();
+//				Response response = Response.parseResponse(mBufferedReader);
+//				Matcher m;
+//
+//				if (response.headers.containsKey("session")) {
+//					try {
+//						m = Response.rexegSession.matcher(response.headers.get("session"));
+//						m.find();
+//						mSessionID = m.group(1);
+//					} catch (Exception e) {
+//						throw new IOException("Invalid response from server. Session id: "+mSessionID);
+//					}
+//				}
+//
+//			}
+
+	/**
 	 * Forges and sends the RECORD request 
 	 */
 	private void sendRequestRecord() throws IllegalStateException, SocketException, IOException {
@@ -471,9 +558,9 @@ public class RtspClient {
 	private String addHeaders() {
 		return "CSeq: " + (++mCSeq) + "\r\n" +
 				"Content-Length: 0\r\n" +
-				"Session: " + mSessionID + "\r\n" +
+				(mSessionID!=null ? ("Session: " + mSessionID) : "") + "\r\n" +
 				// For some reason you may have to remove last "\r\n" in the next line to make the RTSP client work with your wowza server :/
-				(mAuthorization != null ? "Authorization: " + mAuthorization + "\r\n":"") + "\r\n";
+				(mAuthorization != null ? "Authorization: " + mAuthorization + "\r\n":"") + "";
 	}
 
 	/**
@@ -605,6 +692,10 @@ public class RtspClient {
 				} else {
 					break;
 				}
+			}
+			int length = Integer.parseInt(response.headers.get("content-length").replace(" ", ""));
+			for(int i = 0; i < length; i++) {
+				input.read();
 			}
 			if (line==null) throw new SocketException("Connection lost");
 
