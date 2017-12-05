@@ -341,6 +341,7 @@ public abstract class VideoStream extends MediaStream {
 		try {
 			mMediaRecorder = new MediaRecorder();
 			mMediaRecorder.setCamera(mCamera);
+			//TODO: Add the surface here in addition to the camera.
 			mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
 			mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
 			mMediaRecorder.setVideoEncoder(mVideoEncoder);
@@ -459,6 +460,13 @@ public abstract class VideoStream extends MediaStream {
 			public void onPreviewFrame(byte[] data, Camera camera) {
 				oldnow = now;
 				now = System.nanoTime()/1000;
+
+				Camera.Size size = camera.getParameters().getPreviewSize();
+				// TODO: add a check to make sure that data is not null here.
+				if(data == null) return;
+				byte[] data2 = new byte[data.length];
+				rotateNV21(data, data2, size.width, size.height, 90);
+
 				if (i++>3) {
 					i = 0;
 					//Log.d(TAG,"Measured: "+1000000L/(now-oldnow)+" fps.");
@@ -467,19 +475,21 @@ public abstract class VideoStream extends MediaStream {
 					int bufferIndex = mMediaCodec.dequeueInputBuffer(500000);
 					if (bufferIndex>=0) {
 						inputBuffers[bufferIndex].clear();
-						if (data == null) Log.e(TAG,"Symptom of the \"Callback buffer was to small\" problem...");
-						else convertor.convert(data, inputBuffers[bufferIndex]);
+						if (data2 == null) Log.e(TAG,"Symptom of the \"Callback buffer was too small\" problem...");
+						else convertor.convert(data2, inputBuffers[bufferIndex]);
 						mMediaCodec.queueInputBuffer(bufferIndex, 0, inputBuffers[bufferIndex].position(), now, 0);
 					} else {
 						Log.e(TAG,"No buffer available !");
 					}
 				} finally {
-					mCamera.addCallbackBuffer(data);
-				}				
+						mCamera.addCallbackBuffer(data2);
+				}
 			}
 		};
-		
-		for (int i=0;i<10;i++) mCamera.addCallbackBuffer(new byte[convertor.getBufferSize()]);
+
+		// Not sure why this isn't working. Trying to set a hard-coded size
+//		for (int i=0;i<10;i++) mCamera.addCallbackBuffer(new byte[convertor.getBufferSize()]);
+		for (int i=0;i<10;i++) mCamera.addCallbackBuffer(new byte[1843200]);
 		mCamera.setPreviewCallbackWithBuffer(callback);
 
 		// The packetizer encapsulates the bit stream in an RTP stream and send it over the network
@@ -488,6 +498,46 @@ public abstract class VideoStream extends MediaStream {
 
 		mStreaming = true;
 
+	}
+
+	public static void rotateNV21(byte[] input, byte[] output, int width, int height, int rotation) {
+		boolean swap = (rotation == 90 || rotation == 270);
+		boolean yflip = (rotation == 90 || rotation == 180);
+		boolean xflip = (rotation == 270 || rotation == 180);
+		for (int x = 0; x < width; x++) {
+			for (int y = 0; y < height; y++) {
+				int xo = x, yo = y;
+				int w = width, h = height;
+				int xi = xo, yi = yo;
+				if (swap) {
+					xi = w * yo / h;
+					yi = h * xo / w;
+				}
+				if (yflip) {
+					yi = h - yi - 1;
+				}
+				if (xflip) {
+					xi = w - xi - 1;
+				}
+				output[w * yo + xo] = input[w * yi + xi];
+				int fs = w * h;
+				int qs = (fs >> 2);
+				xi = (xi >> 1);
+				yi = (yi >> 1);
+				xo = (xo >> 1);
+				yo = (yo >> 1);
+				w = (w >> 1);
+				h = (h >> 1);
+				// adjust for interleave here
+				int ui = fs + (w * yi + xi) * 2;
+				int uo = fs + (w * yo + xo) * 2;
+				// and here
+				int vi = ui + 1;
+				int vo = uo + 1;
+				output[uo] = input[ui];
+				output[vo] = input[vi];
+			}
+		}
 	}
 
 	/**
@@ -516,6 +566,7 @@ public abstract class VideoStream extends MediaStream {
 		mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
 		mMediaCodec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 		Surface surface = mMediaCodec.createInputSurface();
+//		Surface surface = MediaCodec.createPersistentInputSurface();
 		((SurfaceView)mSurfaceView).addMediaCodecSurface(surface);
 		mMediaCodec.start();
 

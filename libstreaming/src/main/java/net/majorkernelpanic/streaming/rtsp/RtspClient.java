@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.security.MessageDigest;
@@ -318,7 +319,7 @@ public class RtspClient {
 //		sendRequestAnnounce();
 		sendRequestDescribe();
 		sendRequestSetup();
-//		sendRequestPlay();
+		sendRequestPlay();
 //		sendRequestRecord();
 	}
 	
@@ -420,9 +421,10 @@ public class RtspClient {
 				
 				if (response.headers.containsKey("session")) {
 					try {
-						m = Response.rexegSession.matcher(response.headers.get("session"));
-						m.find();
-						mSessionID = m.group(1);
+//						m = Response.rexegSession.matcher(response.headers.get("session"));
+//						m.find();
+//						mSessionID = m.group(1);
+						mSessionID = response.headers.get("session");
 					} catch (Exception e) {
 						throw new IOException("Invalid response from server. Session id: "+mSessionID);
 					}
@@ -430,7 +432,11 @@ public class RtspClient {
 				
 				if (mParameters.transport == TRANSPORT_UDP) {
 					try {
-						m = Response.rexegTransport.matcher(response.headers.get("transport")); m.find();
+						Matcher m0 = Response.regexDestination.matcher(response.headers.get("transport"));
+						m0.find();
+						m = Response.rexegTransport.matcher(response.headers.get("transport"));
+						m.find();
+						stream.setDestinationAddress(InetAddress.getByName(m0.group(1)));
 						stream.setDestinationPorts(Integer.parseInt(m.group(3)), Integer.parseInt(m.group(4)));
 						Log.d(TAG, "Setting destination ports: "+Integer.parseInt(m.group(3))+", "+Integer.parseInt(m.group(4)));
 					} catch (Exception e) {
@@ -455,7 +461,7 @@ public class RtspClient {
 //				String params = mParameters.transport==TRANSPORT_TCP ?
 //						("TCP;interleaved="+2*i+"-"+(2*i+1)) : ("UDP;unicast;client_port="+(5000+2*i)+"-"+(5000+2*i+1)+";mode=receive");
 				String request = "DESCRIBE rtsp://"+mParameters.host+":"+mParameters.port+mParameters.path+" RTSP/1.0\r\n" +
-//						"Accept: application/sdp"+"\r\n" +
+						"Accept: application/sdp"+"\r\n" +
 						addHeaders();
 
 				Log.i(TAG,request.substring(0, request.indexOf("\r\n")));
@@ -495,31 +501,31 @@ public class RtspClient {
 	/**
 	 * Forges and sends the PLAY request
 	 */
-//	private void sendRequestPlay() throws IllegalStateException, SocketException, IOException {
+	private void sendRequestPlay() throws IllegalStateException, SocketException, IOException {
 //				String params = mParameters.transport==TRANSPORT_TCP ?
 //						("TCP;interleaved="+2*i+"-"+(2*i+1)) : ("UDP;unicast;client_port="+(5000+2*i)+"-"+(5000+2*i+1)+";mode=receive");
-//				String request = "PLAY rtsp://"+mParameters.host+":"+mParameters.port+mParameters.path+" RTSP/1.0\r\n" +
+				String request = "PLAY rtsp://"+mParameters.host+":"+mParameters.port+mParameters.path+" RTSP/1.0\r\n" +
 //						"Transport: RTP/AVP/"+params+"\r\n" +
-//						addHeaders();
-//
-//				Log.i(TAG,request.substring(0, request.indexOf("\r\n")));
-//
-//				mOutputStream.write(request.getBytes("UTF-8"));
-//				mOutputStream.flush();
-//				Response response = Response.parseResponse(mBufferedReader);
-//				Matcher m;
-//
-//				if (response.headers.containsKey("session")) {
-//					try {
-//						m = Response.rexegSession.matcher(response.headers.get("session"));
-//						m.find();
-//						mSessionID = m.group(1);
-//					} catch (Exception e) {
-//						throw new IOException("Invalid response from server. Session id: "+mSessionID);
-//					}
-//				}
-//
-//			}
+						"Range: npt=0.000-\r\n"+
+						addHeaders();
+
+				Log.i(TAG,request.substring(0, request.indexOf("\r\n")));
+
+				mOutputStream.write(request.getBytes("UTF-8"));
+				mOutputStream.flush();
+				Response response = Response.parseResponse(mBufferedReader);
+				Matcher m;
+
+				if (response.headers.containsKey("session")) {
+					try {
+						m = Response.rexegSession.matcher(response.headers.get("session"));
+						m.find();
+						mSessionID = m.group(1);
+					} catch (Exception e) {
+						throw new IOException("Invalid response from server. Session id: "+mSessionID);
+					}
+				}
+			}
 
 	/**
 	 * Forges and sends the RECORD request 
@@ -666,6 +672,8 @@ public class RtspClient {
 		public static final Pattern rexegSession = Pattern.compile("(\\d+)",Pattern.CASE_INSENSITIVE);
 		// Parses a Transport header
 		public static final Pattern rexegTransport = Pattern.compile("client_port=(\\d+)-(\\d+).+server_port=(\\d+)-(\\d+)",Pattern.CASE_INSENSITIVE);
+//		public static final Pattern regexDestination = Pattern.compile("destination=(\\d);",Pattern.CASE_INSENSITIVE);
+		public static final Pattern regexDestination = Pattern.compile("destination=([0-9]+.[0-9]+.[0-9]+.[0-9]+);",Pattern.CASE_INSENSITIVE);
 
 
 		public int status;

@@ -18,7 +18,9 @@ import android.view.WindowManager
 import net.majorkernelpanic.streaming.video.VideoQuality
 import java.lang.Exception
 import android.net.wifi.WifiManager
-
+import android.util.DisplayMetrics
+import net.majorkernelpanic.streaming.MediaStream
+import net.majorkernelpanic.streaming.gl.SurfaceView
 
 
 class ServerActivity : AppCompatActivity(), SurfaceHolder.Callback, Session.Callback {
@@ -42,13 +44,25 @@ class ServerActivity : AppCompatActivity(), SurfaceHolder.Callback, Session.Call
         multicastLock.setReferenceCounted(false)
         multicastLock.acquire()
 
+        val displayMetrics:DisplayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val height:Int = displayMetrics.heightPixels
+        val width:Int = displayMetrics.widthPixels
+
         val sessionBuilder = SessionBuilder.getInstance()
                 .setSurfaceView(surfaceView)
-                .setCamera(1)
+                .setCamera(0)
                 .setPreviewOrientation(90)
                 .setContext(applicationContext)
                 .setAudioEncoder(SessionBuilder.AUDIO_NONE)
-                .setVideoQuality(VideoQuality(320,240,20,5000000))
+                //Supposedly supported resolutions: 1920x1080, 1600x1200, 1440x1080, 1280x960, 1280x768, 1280x720, 1024x768, 800x600, 800x480, 720x480, 640x480, 640x360, 480x640, 480x360, 480x320, 352x288, 320x240, 240x320, 176x144, 160x120, 144x176
+
+//                .setVideoQuality(VideoQuality(320,240,30,2000000)) // Supported
+//                .setVideoQuality(VideoQuality(640,480,30,2000000)) // Supported
+//                .setVideoQuality(VideoQuality(720,480,30,2000000)) // Supported
+//                .setVideoQuality(VideoQuality(800,600,30,2000000)) // Supported
+//                .setVideoQuality(VideoQuality(1024,768,30,4000000)) // Supported
+                .setVideoQuality(VideoQuality(1280,960,4,8000000)) // Supported
 //                .setDestination("192.168.43.19")// mbp
 //                .setDestination("192.168.43.20")// iMac
 //                .setDestination("192.168.43.19")// mbp
@@ -58,6 +72,9 @@ class ServerActivity : AppCompatActivity(), SurfaceHolder.Callback, Session.Call
                 .setCallback(this)
         sessionBuilder.videoEncoder = SessionBuilder.VIDEO_H264
         session = sessionBuilder.build()
+        session!!.videoTrack.streamingMethod = MediaStream.MODE_MEDIACODEC_API
+        surfaceView.setAspectRatioMode(SurfaceView.ASPECT_RATIO_PREVIEW)
+
 
 //        val sessionBuilder2 = SessionBuilder.getInstance()
 //                .setSurfaceView(surfaceView)
