@@ -20,6 +20,8 @@ package net.majorkernelpanic.streaming.video;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+
 import android.hardware.Camera;
 import android.hardware.Camera.Size;
 import android.util.Log;
@@ -81,7 +83,7 @@ public class VideoQuality {
 
 	public static VideoQuality parseQuality(String str) {
 		VideoQuality quality = DEFAULT_VIDEO_QUALITY.clone();
-		if (str != null) {
+		if (str != null && !Objects.equals(str, "")) {
 			String[] config = str.split("-");
 			try {
 				quality.bitrate = Integer.parseInt(config[0])*1000; // conversion to bit/s

@@ -30,6 +30,7 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.util.Objects;
 import java.util.Set;
 import net.majorkernelpanic.streaming.MediaStream;
 import net.majorkernelpanic.streaming.Session;
@@ -109,7 +110,7 @@ public class UriParser {
 				// MULTICAST -> the stream will be sent to a multicast group
 				// The default mutlicast address is 228.5.6.7, but the client can specify another
 				else if (paramName.equalsIgnoreCase("multicast")) {
-					if (paramValue!=null) {
+					if (paramValue!=null && !Objects.equals(paramValue, "")) {
 						try {
 							InetAddress addr = InetAddress.getByName(paramValue);
 							if (!addr.isMulticastAddress()) {
