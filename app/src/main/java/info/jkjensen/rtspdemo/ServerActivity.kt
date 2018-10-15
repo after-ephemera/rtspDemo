@@ -61,18 +61,18 @@ class ServerActivity : AppCompatActivity(), SurfaceHolder.Callback, Session.Call
 //                .setVideoQuality(VideoQuality(640,480,30,2000000)) // Supported
 //                .setVideoQuality(VideoQuality(720,480,30,2000000)) // Supported
 //                .setVideoQuality(VideoQuality(800,600,30,2000000)) // Supported
-//                .setVideoQuality(VideoQuality(1024,768,30,4000000)) // Supported
-                .setVideoQuality(VideoQuality(1280,960,4,8000000)) // Supported
+                .setVideoQuality(VideoQuality(1024,768,30,4000000)) // Supported
+//                .setVideoQuality(VideoQuality(1280,960,4,8000000)) // Supported
 //                .setDestination("192.168.43.19")// mbp
 //                .setDestination("192.168.43.20")// iMac
 //                .setDestination("192.168.43.19")// mbp
 //                .setDestination("192.168.43.110")// Galaxy s7
-                .setDestination("192.168.43.6")// OnePlus 5
+//                .setDestination("192.168.43.6")// OnePlus 5
 //                .setDestination("232.0.1.2") // multicast
                 .setCallback(this)
         sessionBuilder.videoEncoder = SessionBuilder.VIDEO_H264
         session = sessionBuilder.build()
-        session!!.videoTrack.streamingMethod = MediaStream.MODE_MEDIACODEC_API
+//        session!!.videoTrack.streamingMethod = MediaStream.MODE_MEDIACODEC_API
         surfaceView.setAspectRatioMode(SurfaceView.ASPECT_RATIO_PREVIEW)
 
 
